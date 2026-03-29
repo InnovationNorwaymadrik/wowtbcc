@@ -1,0 +1,1869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TBC Raid Planner — Outland's Edge</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0c0f;
+  --bg2: #0f1218;
+  --bg3: #13171f;
+  --border: rgba(255,255,255,0.06);
+  --border-bright: rgba(255,180,50,0.3);
+  --gold: #f0b840;
+  --gold2: #ffd87a;
+  --gold-dim: #8a6820;
+  --red: #c94040;
+  --red2: #ff6b6b;
+  --blue: #4a9eff;
+  --blue2: #7bbfff;
+  --green: #5adf7a;
+  --purple: #b06aff;
+  --text: #d8cfc4;
+  --text-muted: #6e6860;
+  --text-bright: #f5ede0;
+
+  /* Class colors */
+  --warrior: #C79C6E;
+  --paladin: #F58CBA;
+  --hunter: #ABD473;
+  --rogue: #FFF569;
+  --priest: #FFFFFF;
+  --shaman: #0070DE;
+  --mage: #69CCF0;
+  --warlock: #9482C9;
+  --druid: #FF7D0A;
+  --deathknight: #C41E3A;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Crimson Pro', Georgia, serif;
+  font-size: 17px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* === NOISE TEXTURE OVERLAY === */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* === HEADER === */
+header {
+  position: relative;
+  text-align: center;
+  padding: 60px 20px 40px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(180deg, rgba(10,8,5,0.95) 0%, var(--bg) 100%);
+  overflow: hidden;
+}
+
+header::before {
+  content: '';
+  position: absolute;
+  top: -60px; left: 50%; transform: translateX(-50%);
+  width: 600px; height: 200px;
+  background: radial-gradient(ellipse, rgba(180,120,20,0.15) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.header-eyebrow {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--gold-dim);
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+header h1 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 900;
+  color: var(--gold2);
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  text-shadow: 0 0 40px rgba(240,184,64,0.4), 0 2px 4px rgba(0,0,0,0.8);
+  margin-bottom: 10px;
+}
+
+header h1 span {
+  color: var(--text-bright);
+}
+
+header .subtitle {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 15px;
+  letter-spacing: 0.05em;
+}
+
+/* === NAV === */
+nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,12,15,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+nav::-webkit-scrollbar { display: none; }
+
+.nav-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 16px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color 0.2s;
+}
+.nav-btn::after {
+  content: '';
+  position: absolute;
+  bottom: 0; left: 50%; right: 50%;
+  height: 2px;
+  background: var(--gold);
+  transition: left 0.25s, right 0.25s;
+}
+.nav-btn:hover, .nav-btn.active {
+  color: var(--gold2);
+}
+.nav-btn.active::after {
+  left: 12px; right: 12px;
+}
+
+/* === MAIN LAYOUT === */
+main {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 20px 80px;
+}
+
+/* === SECTION === */
+.section {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.section.active { display: block; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.section-header {
+  padding: 40px 0 24px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 32px;
+}
+
+.section-header h2 {
+  font-family: 'Cinzel', serif;
+  font-size: clamp(22px, 3vw, 32px);
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+
+.section-header .raid-meta {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 0.1em;
+}
+
+.raid-meta span {
+  color: var(--gold-dim);
+  margin: 0 6px;
+}
+
+/* === GRID LAYOUTS === */
+.grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+
+/* === CARDS === */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: var(--border-bright); }
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.card:hover::before { opacity: 1; }
+
+.card-title {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--gold2);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title .icon {
+  width: 20px; height: 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+
+/* === BOSS CARDS === */
+.boss-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.boss-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.boss-header:hover { background: rgba(255,255,255,0.03); }
+
+.boss-icon {
+  width: 44px; height: 44px;
+  border-radius: 4px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+}
+
+.boss-name {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 0.04em;
+}
+
+.boss-tags {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  padding: 2px 7px;
+  border-radius: 2px;
+  text-transform: uppercase;
+}
+.tag-fire { background: rgba(201,64,64,0.2); color: var(--red2); border: 1px solid rgba(201,64,64,0.3); }
+.tag-magic { background: rgba(74,158,255,0.15); color: var(--blue2); border: 1px solid rgba(74,158,255,0.25); }
+.tag-physical { background: rgba(200,170,100,0.15); color: var(--gold); border: 1px solid rgba(200,170,100,0.2); }
+.tag-shadow { background: rgba(176,106,255,0.15); color: var(--purple); border: 1px solid rgba(176,106,255,0.2); }
+.tag-nature { background: rgba(90,223,122,0.15); color: var(--green); border: 1px solid rgba(90,223,122,0.2); }
+.tag-tank { background: rgba(199,156,110,0.15); color: var(--warrior); border: 1px solid rgba(199,156,110,0.2); }
+.tag-heal { background: rgba(245,140,186,0.15); color: var(--paladin); border: 1px solid rgba(245,140,186,0.2); }
+.tag-hard { background: rgba(201,64,64,0.25); color: #ff9090; border: 1px solid rgba(201,64,64,0.4); }
+
+.boss-chevron {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 18px;
+  transition: transform 0.25s;
+  flex-shrink: 0;
+}
+.boss-card.open .boss-chevron { transform: rotate(180deg); }
+
+.boss-body {
+  display: none;
+  padding: 20px;
+  border-top: 1px solid var(--border);
+}
+.boss-card.open .boss-body { display: block; }
+
+/* === TACTIC SECTIONS === */
+.tactic-block {
+  margin-bottom: 20px;
+}
+
+.tactic-label {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tactic-block ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tactic-block li {
+  padding-left: 16px;
+  position: relative;
+  font-size: 15px;
+  color: var(--text);
+}
+.tactic-block li::before {
+  content: '▸';
+  position: absolute;
+  left: 0;
+  color: var(--gold-dim);
+  font-size: 11px;
+  top: 4px;
+}
+
+.role-blocks {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+@media (max-width: 600px) { .role-blocks { grid-template-columns: 1fr; } }
+
+.role-block {
+  padding: 12px 14px;
+  border-radius: 3px;
+  border: 1px solid;
+  background: rgba(255,255,255,0.02);
+}
+.role-block.tank { border-color: rgba(199,156,110,0.3); }
+.role-block.healer { border-color: rgba(245,140,186,0.3); }
+.role-block.dps { border-color: rgba(74,158,255,0.25); }
+
+.role-block-title {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.role-block.tank .role-block-title { color: var(--warrior); }
+.role-block.healer .role-block-title { color: var(--paladin); }
+.role-block.dps .role-block-title { color: var(--blue2); }
+
+.role-block ul { list-style: none; }
+.role-block li {
+  font-size: 13px;
+  color: var(--text);
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.role-block li:last-child { border-bottom: none; }
+
+/* === ABILITY TABLE === */
+.ability-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.ability-table th {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--gold-dim);
+  text-align: left;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.ability-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  vertical-align: top;
+}
+.ability-table tr:last-child td { border-bottom: none; }
+.ability-table tr:hover td { background: rgba(255,255,255,0.02); }
+.ability-name { color: var(--gold2); font-weight: 600; }
+.ability-danger { color: var(--red2); }
+.ability-safe { color: var(--green); }
+
+/* === RAID COMP BUILDER === */
+.comp-builder {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.comp-builder h3 {
+  font-family: 'Cinzel', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.08em;
+  margin-bottom: 20px;
+}
+
+.player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.player-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 10px;
+  position: relative;
+  transition: border-color 0.15s;
+}
+.player-slot:hover { border-color: rgba(255,255,255,0.12); }
+
+.player-slot .slot-num {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  color: var(--text-muted);
+  min-width: 18px;
+}
+
+.player-slot input[type="text"] {
+  background: none;
+  border: none;
+  color: var(--text-bright);
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  width: 80px;
+  outline: none;
+  min-width: 0;
+  flex: 1;
+}
+.player-slot input::placeholder { color: var(--text-muted); font-style: italic; }
+
+.player-slot select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: 'Crimson Pro', serif;
+  font-size: 13px;
+  padding: 2px 4px;
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  max-width: 100px;
+}
+
+.player-slot select option { background: var(--bg); }
+
+.player-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.player-role-badge {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  padding: 1px 5px;
+  border-radius: 2px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* CLASS COLORS */
+.class-warrior { color: var(--warrior); }
+.class-paladin { color: var(--paladin); }
+.class-hunter  { color: var(--hunter);  }
+.class-rogue   { color: var(--rogue);   }
+.class-priest  { color: var(--priest);  }
+.class-shaman  { color: var(--shaman);  }
+.class-mage    { color: var(--mage);    }
+.class-warlock { color: var(--warlock); }
+.class-druid   { color: var(--druid);   }
+
+.dot-warrior { background: var(--warrior); }
+.dot-paladin { background: var(--paladin); }
+.dot-hunter  { background: var(--hunter);  }
+.dot-rogue   { background: var(--rogue);   }
+.dot-priest  { background: var(--priest);  }
+.dot-shaman  { background: var(--shaman);  }
+.dot-mage    { background: var(--mage);    }
+.dot-warlock { background: var(--warlock); }
+.dot-druid   { background: var(--druid);   }
+
+/* === ROLE SELECT === */
+.role-select { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.role-filter-btn {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text-muted);
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  padding: 6px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+}
+.role-filter-btn:hover, .role-filter-btn.active {
+  border-color: var(--gold);
+  color: var(--gold);
+  background: rgba(240,184,64,0.06);
+}
+
+/* === COMP SUMMARY === */
+.comp-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.comp-stat {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 8px 14px;
+  text-align: center;
+  min-width: 70px;
+}
+
+.comp-stat .stat-val {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--gold2);
+  line-height: 1;
+}
+.comp-stat .stat-label {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* === PLAYER INSTRUCTIONS === */
+.instruction-area {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.instruction-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.instruction-header h4 {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-bright);
+  letter-spacing: 0.06em;
+}
+
+.instruction-box {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 10px 12px;
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.65;
+}
+
+.btn {
+  font-family: 'Cinzel', serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 9px 20px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #c49030, #f0b840);
+  color: #0a0800;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #d4a040, #ffd070);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(240,184,64,0.3);
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.btn-ghost:hover {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+}
+
+/* === NOTES === */
+.notes-area {
+  width: 100%;
+  min-height: 100px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 12px;
+  color: var(--text);
+  font-family: 'Crimson Pro', serif;
+  font-size: 15px;
+  line-height: 1.6;
+  resize: vertical;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.notes-area:focus { border-color: var(--gold-dim); }
+
+/* === WARNING / TIP BOXES === */
+.tip-box {
+  border-radius: 3px;
+  padding: 10px 14px;
+  font-size: 14px;
+  margin-bottom: 12px;
+  border-left: 3px solid;
+}
+.tip-box.warning { background: rgba(201,64,64,0.1); border-color: var(--red); color: #ffaaaa; }
+.tip-box.info    { background: rgba(74,158,255,0.1); border-color: var(--blue); color: #aaccff; }
+.tip-box.gold    { background: rgba(240,184,64,0.08); border-color: var(--gold); color: #ffe090; }
+
+.tip-box strong { display: block; font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 4px; opacity: 0.8; }
+
+/* === SCROLLBAR === */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border-bright); border-radius: 3px; }
+
+/* === DIVIDER === */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 24px 0;
+}
+
+/* === PHASE BADGE === */
+.phase-badge {
+  display: inline-block;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 2px;
+  background: rgba(240,184,64,0.1);
+  color: var(--gold);
+  border: 1px solid rgba(240,184,64,0.2);
+  margin-left: 10px;
+}
+
+/* === FLEX HELPERS === */
+.flex { display: flex; }
+.flex-between { display: flex; justify-content: space-between; align-items: center; }
+.gap-2 { gap: 8px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.mt-4 { margin-top: 16px; }
+
+/* === ASSIGNMENT TRACKER === */
+.assignment-row {
+  display: grid;
+  grid-template-columns: 140px 120px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  margin-bottom: 6px;
+}
+@media (max-width: 700px) {
+  .assignment-row { grid-template-columns: 1fr 1fr; }
+}
+.assignment-row:hover { border-color: rgba(255,255,255,0.1); }
+
+.assignment-row input, .assignment-row select, .assignment-row textarea {
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-family: 'Crimson Pro', serif;
+  font-size: 14px;
+  outline: none;
+  width: 100%;
+}
+.assignment-row select { background: var(--bg); border: 1px solid var(--border); border-radius: 2px; padding: 2px 4px; }
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+  .role-blocks { grid-template-columns: 1fr; }
+  .player-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">World of Warcraft: The Burning Crusade Classic</div>
+  <h1>Outland's <span>Edge</span></h1>
+  <p class="subtitle">Raid Planner &amp; Tactics Encyclopedia</p>
+</header>
+
+<nav id="main-nav">
+  <button class="nav-btn active" onclick="showSection('roster')">Roster</button>
+  <button class="nav-btn" onclick="showSection('assignments')">Assignments</button>
+  <button class="nav-btn" onclick="showSection('gruul')">Gruul's Lair</button>
+  <button class="nav-btn" onclick="showSection('magtheridon')">Magtheridon</button>
+  <button class="nav-btn" onclick="showSection('ssc')">Serpentshrine</button>
+  <button class="nav-btn" onclick="showSection('tk')">Tempest Keep</button>
+  <button class="nav-btn" onclick="showSection('hyjal')">Mount Hyjal</button>
+  <button class="nav-btn" onclick="showSection('bt')">Black Temple</button>
+</nav>
+
+<main>
+
+<!-- ========== ROSTER ========== -->
+<div id="section-roster" class="section active">
+  <div class="section-header">
+    <h2>Raid Roster</h2>
+    <div class="raid-meta">25-Player Raid <span>·</span> The Burning Crusade Classic</div>
+  </div>
+
+  <div class="comp-builder">
+    <h3>⚔ Build Your Raid Composition</h3>
+    <div class="flex-between mb-4" style="flex-wrap:wrap; gap:10px;">
+      <div class="role-select">
+        <button class="role-filter-btn active" onclick="filterRole(this,'all')">All</button>
+        <button class="role-filter-btn" onclick="filterRole(this,'tank')">Tanks</button>
+        <button class="role-filter-btn" onclick="filterRole(this,'healer')">Healers</button>
+        <button class="role-filter-btn" onclick="filterRole(this,'dps')">DPS</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-ghost" onclick="clearRoster()">Clear</button>
+        <button class="btn btn-primary" onclick="exportRoster()">Export</button>
+      </div>
+    </div>
+    <div class="player-grid" id="player-grid"></div>
+    <div class="comp-summary" id="comp-summary"></div>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="icon">📋</span> Recommended Composition</div>
+      <div class="tactic-block">
+        <div class="tactic-label">Tanks (2–3)</div>
+        <ul>
+          <li>2× Protection Warrior — Main and off-tank</li>
+          <li>1× Protection Paladin — AoE threat / add control</li>
+        </ul>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">Healers (6–7)</div>
+        <ul>
+          <li>2× Holy Paladin — Tank healing + blessings</li>
+          <li>2× Restoration Druid — HoT coverage, Innervate</li>
+          <li>2× Holy Priest — Raid healing, Prayer of Healing</li>
+          <li>1× Restoration Shaman — Chain Heal, Bloodlust</li>
+        </ul>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">DPS (15–16)</div>
+        <ul>
+          <li>1–2× Affliction Warlock — Curse of Elements, Shadow Bolts</li>
+          <li>1× Demonology Warlock — Bloodlust alternative</li>
+          <li>2× Mage — Arcane Intellect, AoE</li>
+          <li>2× Shadow Priest — Vampiric Touch, replenishment</li>
+          <li>2× Hunter — Misdirection, Aspect of Wild</li>
+          <li>2× Rogue — Combat swords for burst</li>
+          <li>2× Enhancement Shaman — Windfury, Bloodlust</li>
+          <li>1–2× Balance Druid — Moonkin aura, faerie fire</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="icon">💡</span> Composition Notes</div>
+      <div class="tip-box gold"><strong>Bloodlust / Heroism</strong> Bring at least 3 Shamans to cover all 3 groups. Stagger Bloodlust: pull → phase → execute.</div>
+      <div class="tip-box info"><strong>Curse Coverage</strong> Ensure a Warlock has Curse of Elements up for all magic-damage bosses. Ele/Resto shamans can provide Curse of Elements resist aura alternative.</div>
+      <div class="tip-box warning"><strong>Shadow Priests</strong> At least 2 Shadow Priests drastically improve mana sustain. They are mandatory for long fights like Archimonde and Illidan.</div>
+      <div class="tactic-block" style="margin-top:12px;">
+        <div class="tactic-label">Must-Have Buffs Checklist</div>
+        <ul>
+          <li>Arcane Intellect (Mage)</li>
+          <li>Gift of the Wild (Druid)</li>
+          <li>Blessing of Kings / Might / Wisdom (Paladin)</li>
+          <li>Fortitude / Divine Spirit (Priest)</li>
+          <li>Commanding / Devotion Aura</li>
+          <li>Faerie Fire / Sunder Armor (for physical DPS)</li>
+          <li>Totem coverage all 3 groups</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== ASSIGNMENTS ========== -->
+<div id="section-assignments" class="section">
+  <div class="section-header">
+    <h2>Player Assignments</h2>
+    <div class="raid-meta">Per-Player Instructions <span>·</span> Roles &amp; Jobs</div>
+  </div>
+  <div class="comp-builder">
+    <h3>📣 Assignment Board</h3>
+    <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">Set each player's specific job for the raid night. Assignments pull from your roster above.</p>
+    <div id="assignment-list"></div>
+    <div style="margin-top:12px;">
+      <button class="btn btn-primary" onclick="buildAssignments()">Pull from Roster</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="icon">🗒</span> Raid Night Notes</div>
+    <textarea class="notes-area" placeholder="Enter raid night notes, reminders, assignments, cooldown rotations..."></textarea>
+  </div>
+</div>
+
+<!-- ========== GRUUL'S LAIR ========== -->
+<div id="section-gruul" class="section">
+  <div class="section-header">
+    <h2>Gruul's Lair</h2>
+    <div class="raid-meta">25-Player <span>·</span> Blade's Edge Mountains <span>·</span> 2 Bosses</div>
+  </div>
+  <div class="tip-box gold"><strong>Tier 4 Raid</strong> Entry-level 25-man. Focus on clean Shatter execution for Gruul. Highly recommended starting point before SSC/TK.</div>
+
+  <!-- HIGH KING MAULGAR -->
+  <div class="boss-card" id="boss-maulgar">
+    <div class="boss-header" onclick="toggleBoss('maulgar')">
+      <div class="boss-icon">👑</div>
+      <div>
+        <div class="boss-name">High King Maulgar &amp; Council</div>
+        <div class="boss-tags">
+          <span class="tag tag-physical">Physical</span>
+          <span class="tag tag-magic">Magic</span>
+          <span class="tag tag-tank">5 Tanks Required</span>
+        </div>
+      </div>
+      <div class="boss-chevron">▾</div>
+    </div>
+    <div class="boss-body">
+      <div class="tip-box warning"><strong>Critical</strong> You need a dedicated tank for EACH council member simultaneously. Assign tanks before the pull.</div>
+      <div class="role-blocks">
+        <div class="role-block tank">
+          <div class="role-block-title">⚔ Tanks</div>
+          <ul>
+            <li>MT: High King Maulgar</li>
+            <li>OT2: Olm the Summoner</li>
+            <li>OT3: Kiggler the Crazed</li>
+            <li>OT4: Blindeye the Seer</li>
+            <li>OT5: Krosh Firehand</li>
+          </ul>
+        </div>
+        <div class="role-block healer">
+          <div class="role-block-title">💚 Healers</div>
+          <ul>
+            <li>2 healers on MT</li>
+            <li>1 healer per OT</li>
+            <li>Raid healer on AOE damage</li>
+          </ul>
+        </div>
+        <div class="role-block dps">
+          <div class="role-block-title">⚡ DPS Priority</div>
+          <ul>
+            <li>1. Krosh Firehand</li>
+            <li>2. Olm the Summoner</li>
+            <li>3. Blindeye the Seer</li>
+            <li>4. Kiggler the Crazed</li>
+            <li>5. High King Maulgar</li>
+          </ul>
+        </div>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">Key Mechanics</div>
+        <table class="ability-table">
+          <tr><th>Ability</th><th>Target</th><th>Response</th></tr>
+          <tr><td class="ability-name">Whirlwind</td><td>Maulgar melee cleave</td><td class="ability-danger">Run out of melee, ranged stay back</td></tr>
+          <tr><td class="ability-name">Spell Flay (Kiggler)</td><td>Kiggler's tank</td><td class="ability-danger">Interrupt every cast! Use warrior kick/pummel</td></tr>
+          <tr><td class="ability-name">Arcane Explosion</td><td>Kiggler AoE</td><td class="ability-danger">Tank Kiggler far from raid</td></tr>
+          <tr><td class="ability-name">Demoralizing Roar (Blindeye)</td><td>Raid wide</td><td>Maintain distance, Fear Ward priests</td></tr>
+          <tr><td class="ability-name">Summon Felseeker (Olm)</td><td>Random</td><td class="ability-danger">Fel Seekers must be killed instantly, assign DPS</td></tr>
+          <tr><td class="ability-name">Greater Polymorph</td><td>Maulgar's tank</td><td class="ability-safe">OT must pick up Maulgar immediately when MT is sheeped</td></tr>
+        </table>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">Pull Strategy</div>
+        <ul>
+          <li>A Warlock tanks Krosh using Spell Reflect from a Mage (or Protection Warrior with reflect shield)</li>
+          <li>Mage must stand near the Warlock and reflect Fireball back — this is required for the Warlock to survive</li>
+          <li>Pull all 5 simultaneously, each tank runs to their assigned add</li>
+          <li>Assign 1 dedicated interrupter (Warrior/Rogue) on Kiggler 100% uptime</li>
+          <li>Kill Krosh first — he is the hardest to tank and kills fastest</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- GRUUL THE DRAGONKILLER -->
+  <div class="boss-card" id="boss-gruul">
+    <div class="boss-header" onclick="toggleBoss('gruul')">
+      <div class="boss-icon">🐉</div>
+      <div>
+        <div class="boss-name">Gruul the Dragonkiller</div>
+        <div class="boss-tags">
+          <span class="tag tag-physical">Physical</span>
+          <span class="tag tag-hard">Cave-In Awareness</span>
+          <span class="tag tag-tank">2 Tanks</span>
+        </div>
+      </div>
+      <div class="boss-chevron">▾</div>
+    </div>
+    <div class="boss-body">
+      <div class="tip-box warning"><strong>Shatter</strong> is the wipe mechanic. When Stoned, you MUST run away from ALL other players before the shatter. Spread 10+ yards apart.</div>
+      <div class="role-blocks">
+        <div class="role-block tank">
+          <div class="role-block-title">⚔ Tanks</div>
+          <ul>
+            <li>MT: Face Gruul away from raid</li>
+            <li>OT: Picks up if MT dies or debuffed</li>
+            <li>Tank swap at 5–6 stacks Hurtful Strike</li>
+          </ul>
+        </div>
+        <div class="role-block healer">
+          <div class="role-block-title">💚 Healers</div>
+          <ul>
+            <li>3 healers on tanks (hits HARD)</li>
+            <li>Raid healers handle Shatter damage</li>
+            <li>Pre-cast heals after Shatter</li>
+          </ul>
+        </div>
+        <div class="role-block dps">
+          <div class="role-block-title">⚡ DPS</div>
+          <ul>
+            <li>Max range spread out in arc</li>
+            <li>Stay 10+ yards from all allies</li>
+            <li>Don't DPS during Shatter animation</li>
+          </ul>
+        </div>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">Ability Overview</div>
+        <table class="ability-table">
+          <tr><th>Ability</th><th>Notes</th></tr>
+          <tr><td class="ability-name">Hurtful Strike</td><td>Hits 2nd on threat list for massive damage — MT must be #1 threat always</td></tr>
+          <tr><td class="ability-name">Shatter</td><td class="ability-danger">Petrifies all Stoned players then shatters — massive AoE damage based on proximity. SPREAD OUT!</td></tr>
+          <tr><td class="ability-name">Cave-In</td><td class="ability-danger">Boulders fall from ceiling — watch your feet, move out of impacts</td></tr>
+          <tr><td class="ability-name">Growing</td><td>Gruul gains 10% damage every 30 sec — burn him before stacks get too high</td></tr>
+          <tr><td class="ability-name">Reverberation</td><td>Silence on all players — move away from adds if spawned</td></tr>
+          <tr><td class="ability-name">Ground Slam</td><td>Sends players flying — tanks must be at wall to not fly too far</td></tr>
+        </table>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">Positioning</div>
+        <ul>
+          <li>Gruul faces the entrance wall — tanks back against wall</li>
+          <li>Melee stack behind Gruul in tight arc</li>
+          <li>Ranged spread in a wide arc at max range, 10+ yards apart</li>
+          <li>When Gronn-Stalked (stoned indicator), immediately run away from ALL players</li>
+          <li>After Shatter resolves, healers burst AoE heals on the raid</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== MAGTHERIDON ========== -->
+<div id="section-magtheridon" class="section">
+  <div class="section-header">
+    <h2>Magtheridon's Lair</h2>
+    <div class="raid-meta">25-Player <span>·</span> Hellfire Citadel <span>·</span> 1 Boss</div>
+  </div>
+  <div class="tip-box gold"><strong>Tier 4 Head Token</strong> Magtheridon drops head tokens for Tier 4 helm. Clickers are the #1 cause of wipes — practice the click rotation in advance.</div>
+
+  <div class="boss-card" id="boss-magtheridon">
+    <div class="boss-header" onclick="toggleBoss('magtheridon')">
+      <div class="boss-icon">😈</div>
+      <div>
+        <div class="boss-name">Magtheridon</div>
+        <div class="boss-tags">
+          <span class="tag tag-fire">Fire</span>
+          <span class="tag tag-shadow">Shadow</span>
+          <span class="tag tag-hard">5 Clickers Required</span>
+        </div>
+      </div>
+      <div class="boss-chevron">▾</div>
+    </div>
+    <div class="boss-body">
+      <div class="tip-box warning"><strong>Clickers</strong> — 5 players must click their Cube of Imprisonment simultaneously every time Magtheridon casts Blaze. Missing a click = Channeling disruption = raid wipes from uncontrolled Blaze.</div>
+      <div class="role-blocks">
+        <div class="role-block tank">
+          <div class="role-block-title">⚔ Phase 1 Tanks</div>
+          <ul>
+            <li>5 Channelers — one tank each</li>
+            <li>Face channelers away from raid</li>
+            <li>Be ready to move to Magtheridon in P2</li>
+          </ul>
+        </div>
+        <div class="role-block healer">
+          <div class="role-block-title">💚 Healers</div>
+          <ul>
+            <li>1 healer per channeler tank</li>
+            <li>Raid heal during Quake (P2)</li>
+            <li>1 healer assigned as backup clicker</li>
+          </ul>
+        </div>
+        <div class="role-block dps">
+          <div class="role-block-title">⚡ DPS</div>
+          <ul>
+            <li>Burn channelers fast in P1</li>
+            <li>Priority: kill all 5 before P2</li>
+            <li>5 DPS assigned as cube clickers</li>
+          </ul>
+        </div>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">Phase Breakdown</div>
+        <table class="ability-table">
+          <tr><th>Phase</th><th>Duration</th><th>Key Events</th></tr>
+          <tr><td class="ability-name">Phase 1</td><td>~2 min</td><td>Kill 5 Hellfire Channelers — interrupt their casts, DPS fast</td></tr>
+          <tr><td class="ability-name">Phase 2</td><td>Until 30%</td><td>Magtheridon active — Blaze of Inferno every 60s requires cube click</td></tr>
+          <tr><td class="ability-name">Phase 3</td><td>30% → 0%</td><td class="ability-danger">Magtheridon frenzies + Quakes — burn hard, increased collapse damage</td></tr>
+        </table>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">Cube Click Mechanics (Critical)</div>
+        <ul>
+          <li>Assign 5 players to specific cubes — position them BEFORE the pull</li>
+          <li>Clickers must stand within 5 yards of their cube at all times</li>
+          <li>Raid Leader calls "CLICK" on voice comms or use a macro with /rw</li>
+          <li>All 5 click within 1 second of each other — this silences Magtheridon</li>
+          <li>Clickers maintain DPS between Blaze casts — do NOT stand idle</li>
+          <li>Assign a 6th backup clicker in case someone dies</li>
+        </ul>
+      </div>
+      <div class="tactic-block">
+        <div class="tactic-label">Key Abilities</div>
+        <table class="ability-table">
+          <tr><th>Ability</th><th>Notes</th></tr>
+          <tr><td class="ability-name">Blaze of Inferno</td><td class="ability-danger">Must be cube-clicked to interrupt — leaves fire patches, move away</td></tr>
+          <tr><td class="ability-name">Quake</td><td class="ability-danger">Massive raid-wide damage + knock down. Healers must spam heals</td></tr>
+          <tr><td class="ability-name">Berserk (P3)</td><td class="ability-danger">At 30% — starts Quaking every 30s. Burn HARD</td></tr>
+          <tr><td class="ability-name">Debris</td><td>Ceiling collapses. Watch for rubble, move out</td></tr>
+          <tr><td class="ability-name">Manticron Cube (Channelers)</td><td>Interrupt this — it adds a stacking shadow resist debuff on tanks</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== SSC ========== -->
+<div id="section-ssc" class="section">
+  <div class="section-header">
+    <h2>Serpentshrine Cavern</h2>
+    <div class="raid-meta">25-Player <span>·</span> Coilfang Reservoir <span>·</span> Tier 5 <span>·</span> 6 Bosses</div>
+  </div>
+  <div class="tip-box gold"><strong>Tier 5 Raid</strong> SSC and TK must both be cleared to unlock Mount Hyjal. Lady Vashj requires collecting 4 Tainted Cores — have a clear hand-off plan.</div>
+
+  <!-- HYDROSS -->
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">💧</div>
+    <div><div class="boss-name">Hydross the Unstable</div>
+      <div class="boss-tags"><span class="tag tag-nature">Nature</span><span class="tag tag-magic">Frost</span><span class="tag tag-tank">2 Tanks — Resist Sets</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Resist Gear Required</strong> — MT needs 365 Frost Resist (capped) in Frost form. OT needs 365 Nature Resist in Nature form. Both tanks must have these sets crafted before attempting.</div>
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Hydross switches between Frost (north) and Nature (south) phases when moved across the center</li>
+        <li>Each phase transition spawns 4 elemental adds — kill these FAST before DPS resumes on Hydross</li>
+        <li>Tank him exactly on the line — crossing too deep triggers adds too fast</li>
+        <li>Frost tank takes him north, Nature tank takes him south on transitions</li>
+        <li>Melee stack on Hydross only when in the correct phase for their resist set</li>
+        <li>Transition at 6 stacks of the phase debuff — do not let it stack past 6</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <!-- LURKER -->
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🌊</div>
+    <div><div class="boss-name">The Lurker Below</div>
+      <div class="boss-tags"><span class="tag tag-physical">Physical</span><span class="tag tag-nature">Nature</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box info"><strong>Fishing Encounter</strong> — The Lurker is fished up from the center grate. Use Aquatic Form or water walking to position. One of the more accessible SSC bosses.</div>
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Spout rotates 360° — everyone jumps into the water to avoid it. Watch the animation and pre-jump.</li>
+        <li>Whirl: Cleave to melee — melee run back out, ranged stay at range</li>
+        <li>Geyser: Targeted player is launched into the air then falls into water. Not deadly alone.</li>
+        <li>Submerge (at ~100 energy): Lurker submerges, adds spawn on the platforms — kill them before Lurker returns</li>
+        <li>Assign groups to each platform — do NOT let adds run rampant</li>
+        <li>3 Coilfang Ambushers per platform — CC one, kill the other, then mop up</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <!-- LEOTHERAS -->
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🌀</div>
+    <div><div class="boss-name">Leotheras the Blind</div>
+      <div class="boss-tags"><span class="tag tag-shadow">Shadow</span><span class="tag tag-fire">Fire</span><span class="tag tag-hard">Demon Form</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Inner Demon</strong> — Each player who gets Inner Demon must kill their own Demon copy or they are mind-controlled for the rest of the fight. Every player must be able to kill their demon.</div>
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Leotheras alternates between Humanoid (physical) and Demon (shadow) forms every 45 sec</li>
+        <li>Humanoid Form: Only a Warrior tank can hold aggro. He Whirlwinds — all melee run OUT</li>
+        <li>Demon Form: Warrior loses aggro — a Warlock or Demo-specced player tanks him. Do not nuke in this phase</li>
+        <li>Inner Demon: 1–3 random players get a demon copy — they must kill it themselves. Others cannot help.</li>
+        <li>Chaos Blast: Frontal cone in Demon form — tank positions Leo facing away from raid</li>
+        <li>Assign Warlock tank and prep them with full health before demon phase</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <!-- FATHOM LORD -->
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🐟</div>
+    <div><div class="boss-name">Fathom-Lord Karathress</div>
+      <div class="boss-tags"><span class="tag tag-physical">Physical</span><span class="tag tag-nature">Nature</span><span class="tag tag-tank">4 Tanks</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Council fight — 4 bosses, each requires their own tank</li>
+        <li>Kill Order: Sharkkis (hunter pet) → Tidalvess (shaman) → Caribdis (healer) → Karathress last</li>
+        <li>Karathress gains abilities from each dead advisor — kill in correct order to minimize danger</li>
+        <li>Tidalvess: Interrupt Frost Shock and Earthbind Totem. Assign 2 interrupters</li>
+        <li>Caribdis: Healers must dispel Tidal Surge immediately. Interrupt her heals</li>
+        <li>Sharkkis: His pet (Fathom Lurker) must also be tanked and killed</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <!-- MOROGRIM -->
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🌍</div>
+    <div><div class="boss-name">Morogrim Tidewalker</div>
+      <div class="boss-tags"><span class="tag tag-nature">Frost</span><span class="tag tag-physical">Physical</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Earthquake: Knock-down raid wide — healers continue casting, others stay put</li>
+        <li>Tidal Wave: Massive AoE frost damage — raid stacks frost resist aura/totem</li>
+        <li>Watery Grave: 4 players are teleported into the water with Murloc adds</li>
+        <li>Assign 4 DPS "grave teams" — they must kill their murlocs before rejoining raid</li>
+        <li>AOE classes (Mage, Paladin) excel at killing the grave murloc packs</li>
+        <li>Tanks must hold Morogrim in place during Tidal Wave — do not move him</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <!-- LADY VASHJ -->
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🐍</div>
+    <div><div class="boss-name">Lady Vashj</div>
+      <div class="boss-tags"><span class="tag tag-nature">Nature</span><span class="tag tag-hard">Tainted Cores</span><span class="tag tag-hard">Legendary Boss</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Most Complex Boss in SSC</strong> — Phase 2 requires coordination, positioning, and flawless Core hand-offs. Assign and practice roles before pull.</div>
+    <div class="role-blocks">
+      <div class="role-block tank"><div class="role-block-title">⚔ Tanks</div><ul>
+        <li>MT: Vashj (P1 &amp; P3)</li>
+        <li>P2: 4 add tanks at generators</li>
+        <li>Assign tank per Elite add spawn</li>
+      </ul></div>
+      <div class="role-block healer"><div class="role-block-title">💚 Healers</div><ul>
+        <li>P1: Tank heals + handle enchantments</li>
+        <li>P2: Heal each add tank group</li>
+        <li>P3: Intensive tank healing — Vashj frenzies</li>
+      </ul></div>
+      <div class="role-block dps"><div class="role-block-title">⚡ DPS</div><ul>
+        <li>P1: Burn Vashj, interrupt Static Charge</li>
+        <li>P2: Kill adds, collect cores, kite striders</li>
+        <li>P3: Full burn on Vashj to 0%</li>
+      </ul></div>
+    </div>
+    <div class="tactic-block"><div class="tactic-label">Phase 2 — Tainted Core Hand-Off System</div>
+      <ul>
+        <li>4 Generators must be deactivated — each requires a Tainted Core</li>
+        <li>Tainted Cores drop from Tainted Elementals — assign DPS to each quadrant to kill them</li>
+        <li>Only 1 player can hold a Core at a time (debuffs you, slows movement speed)</li>
+        <li>Pre-assign a chain: Collector → Runner → Depositor for each generator</li>
+        <li>Cores must be THROWN using right-click on a player, not walked to the generator</li>
+        <li>Once all 4 generators are down, Vashj becomes attackable again — Phase 3 begins</li>
+        <li>Coilfang Striders: Must be kited and slowed — assign Hunters with Frost Trap rotation</li>
+        <li>Enchanted Thrall (MC): A Warlock or Hunter must enslave or trap them</li>
+      </ul>
+    </div>
+  </div></div>
+</div>
+
+<!-- ========== TEMPEST KEEP ========== -->
+<div id="section-tk" class="section">
+  <div class="section-header">
+    <h2>Tempest Keep: The Eye</h2>
+    <div class="raid-meta">25-Player <span>·</span> Netherstorm <span>·</span> Tier 5 <span>·</span> 4 Bosses</div>
+  </div>
+  <div class="tip-box gold"><strong>Tier 5 Raid</strong> Kael'thas is one of the most iconic boss fights in TBC. Assign roles for each weapon phase — it is extremely complex.</div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🤖</div>
+    <div><div class="boss-name">Al'ar (Phoenix God)</div>
+      <div class="boss-tags"><span class="tag tag-fire">Fire</span><span class="tag tag-physical">Physical</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Phase 1: Al'ar flies between 8 platforms. Tanks must follow and pick him up at each platform</li>
+        <li>Tanks must be in position BEFORE he lands — pre-position on the platform he will move to</li>
+        <li>Flame Buffet: Stacking fire dot — tanks need FR gear and swap when stacks get too high</li>
+        <li>Meteor: Targeted AoE — spread raid slightly to minimize splash</li>
+        <li>Phase 2 (75%): Al'ar lands in the center. Standard tank and spank with adds</li>
+        <li>Phoenix Rebirth: When Al'ar "dies" in P2, he turns to an egg — nuke the egg before it hatches</li>
+        <li>Dive Bomb in P2: Targeted player takes massive damage — ensure all DPS have health above 50%</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🌪</div>
+    <div><div class="boss-name">Void Reaver</div>
+      <div class="boss-tags"><span class="tag tag-physical">Physical</span><span class="tag tag-magic">Arcane</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box info"><strong>Loot Reaver</strong> — Void Reaver is the most accessible TK boss and often killed first for gear. His only dangerous mechanic is Arcane Orb.</div>
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Arcane Orb: Slow-moving orb targeting random raid members — run away from it. Never run toward the raid.</li>
+        <li>Pounding: AoE damage + knock-back every 15 seconds. Melee take more damage — healers spam during this</li>
+        <li>Knock Away: Tank gets knocked back — OT immediately picks up Reaver</li>
+        <li>Raid spreads loosely to not have Orbs chain-hit multiple targets</li>
+        <li>Fairly tank-and-spank — focus on Orb awareness and you will down him</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🌙</div>
+    <div><div class="boss-name">High Astromancer Solarian</div>
+      <div class="boss-tags"><span class="tag tag-magic">Arcane</span><span class="tag tag-shadow">Shadow</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Arcane Missile Barrage: Massive arcane damage on raid — stack arcane resistance aura</li>
+        <li>Wrath of the Astromancer: Random player gets debuff — they must RUN AWAY from raid before it explodes</li>
+        <li>Teleport Phase: She teleports away — spawns adds that must be killed before she returns</li>
+        <li>Adds spawn in two groups of Solarium Agents — AoE them down fast, they heal each other if alive too long</li>
+        <li>After killing adds, Solarian returns at center — be in position</li>
+        <li>Priestess Delrissa add phase — interrupt her heals</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">☀</div>
+    <div><div class="boss-name">Kael'thas Sunstrider</div>
+      <div class="boss-tags"><span class="tag tag-fire">Fire</span><span class="tag tag-magic">Arcane</span><span class="tag tag-hard">5-Phase Fight</span><span class="tag tag-hard">Legendary</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Hardest Pre-Hyjal Boss</strong> — 5 phases including advisor council, weapon phase, and full Kael'thas. Assign all roles for P3 (weapons) before pull. This fight takes weeks to learn.</div>
+    <div class="tactic-block"><div class="tactic-label">Phase Breakdown</div>
+      <table class="ability-table">
+        <tr><th>Phase</th><th>Summary</th><th>Priority Action</th></tr>
+        <tr><td class="ability-name">P1: Advisors</td><td>4 advisors, each requires tank + interrupts</td><td class="ability-danger">Kill all 4 before Kael lands at ~50% each</td></tr>
+        <tr><td class="ability-name">P2: Weapons</td><td>9 legendary weapons spawn on ground</td><td class="ability-danger">Pick up &amp; equip assigned weapons, defeat empowered weapons</td></tr>
+        <tr><td class="ability-name">P3: Kael'thas Active</td><td>Advisors rez, Kael attacks</td><td>DPS Kael to 50%, AoE adds down</td></tr>
+        <tr><td class="ability-name">P4: Gravity Lapse</td><td class="ability-danger">Entire raid floats in the air</td><td class="ability-danger">Healers sustain floating players — Kael spams Pyroblast</td></tr>
+        <tr><td class="ability-name">P5: Burn</td><td>All abilities active, berserk timer</td><td class="ability-danger">Bloodlust + burn. Assign interrupt rotation on Kael</td></tr>
+      </table>
+    </div>
+    <div class="tactic-block"><div class="tactic-label">Phase 2 Weapon Assignments (Critical)</div>
+      <ul>
+        <li>Pre-assign every weapon to a specific player BEFORE the pull</li>
+        <li>Weapons: Infinity Blade (MT), Phaseshift Bulwark (tank), Warp Slicer (melee), Devastation (melee), Netherstrand Longbow (hunter), Nether Beam (healer), etc.</li>
+        <li>Each weapon MC's its holder initially — raiders must damage the weapon to break the MC</li>
+        <li>Once weapons are picked up, they animate and attack — kill them in order</li>
+        <li>Do NOT pick up a weapon if you are not assigned — chaos will result</li>
+        <li>Assign backup players for each weapon in case the primary dies</li>
+      </ul>
+    </div>
+    <div class="tactic-block"><div class="tactic-label">Gravity Lapse (Phase 4)</div>
+      <ul>
+        <li>All players float in the air — movement is reduced, positioning is chaotic</li>
+        <li>Kael spams Pyroblast — interrupt with assigned interrupters cycling casts</li>
+        <li>Healers must keep all 25 players alive — this is the most healing-intensive moment</li>
+        <li>Assign 3 Pyroblast interrupters rotating every cast</li>
+        <li>Gravity Lapse ends after ~30 sec — be ready to resume DPS immediately</li>
+      </ul>
+    </div>
+  </div></div>
+</div>
+
+<!-- ========== MOUNT HYJAL ========== -->
+<div id="section-hyjal" class="section">
+  <div class="section-header">
+    <h2>Battle for Mount Hyjal</h2>
+    <div class="raid-meta">25-Player <span>·</span> Caverns of Time <span>·</span> Tier 6 <span>·</span> 5 Bosses</div>
+  </div>
+  <div class="tip-box gold"><strong>Tier 6 Raid</strong> Mount Hyjal is primarily a wave-defense encounter before each boss. AoE DPS is highly valued. Trash packs are very dangerous — do not sleep on them.</div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">💀</div>
+    <div><div class="boss-name">Rage Winterchill</div>
+      <div class="boss-tags"><span class="tag tag-magic">Frost</span><span class="tag tag-shadow">Shadow</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Death and Decay: Targeted AoE patch on the ground — assigned player must immediately run out</li>
+        <li>Frost Nova: Roots nearby players — healers must be mobile to get out</li>
+        <li>Icebolt: Freezes a random player in an ice block — other players shatter it with AoE</li>
+        <li>Standard positioning: Tank boss, ranged spread, be ready to move for Death &amp; Decay</li>
+        <li>Assign 2 DPS to immediately attack any Icebolted player to free them</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🧟</div>
+    <div><div class="boss-name">Anetheron</div>
+      <div class="boss-tags"><span class="tag tag-shadow">Shadow</span><span class="tag tag-fire">Fire</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Inferno: Infernal drops on a random player — massive AoE fire damage, run away from the landing zone</li>
+        <li>Carrion Swarm: Frontal cone shadow damage — tank faces boss away from raid at all times</li>
+        <li>Sleep: Puts random player to sleep — they are vulnerable, healers keep them topped</li>
+        <li>Vampiric Aura: Anetheron heals from melee hits — use ranged heavy DPS comp or accept the healing</li>
+        <li>Infernals that land continue to burn their area — do not stack in areas with multiple Infernals</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🐗</div>
+    <div><div class="boss-name">Kaz'rogal</div>
+      <div class="boss-tags"><span class="tag tag-shadow">Shadow</span><span class="tag tag-physical">Physical</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Mana Check</strong> — Kaz'rogal periodically drains all mana to 0. Players with 0 mana after the drain EXPLODE dealing raid-wide damage. Healers and mana classes must use their mana before drain hits.</div>
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Mark of Kaz'rogal: Drains mana over time — if mana reaches 0, player explodes for massive AoE damage</li>
+        <li>When marked, players must immediately begin dumping all mana (spam everything)</li>
+        <li>Healers should pause healing for a second after getting marked to drain their own mana faster</li>
+        <li>Whirlwind: Tank moves him out of melee before Whirlwind begins</li>
+        <li>Cleave: Standard cleave — OT and melee stand behind</li>
+        <li>Assign a Warlock to Life Tap on cooldown — no mana = no explosion risk</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">😤</div>
+    <div><div class="boss-name">Azgalor</div>
+      <div class="boss-tags"><span class="tag tag-shadow">Shadow</span><span class="tag tag-fire">Fire</span><span class="tag tag-hard">Doom</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Doom: Places a 20-second countdown on a player. When it expires, they die and spawn a powerful Doomguard</li>
+        <li>The Doomguard must be immediately enslaved by a Warlock or will wipe the raid</li>
+        <li>Pre-assign 2 Warlocks to Enslave rotation on Doomguards</li>
+        <li>Players with Doom should not release — the Doomguard spawn is needed</li>
+        <li>Rain of Fire: AoE patch on random locations — move out constantly</li>
+        <li>Silence: Interupts all healing and casting — healers pre-cast and move during silence</li>
+        <li>Cleave: Tank faces away from raid</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🔥</div>
+    <div><div class="boss-name">Archimonde</div>
+      <div class="boss-tags"><span class="tag tag-fire">Fire</span><span class="tag tag-shadow">Shadow</span><span class="tag tag-hard">Finger of Death</span><span class="tag tag-hard">Tier 6 Pinnacle</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Doomfire &amp; Air Burst</strong> — Air Burst launches players into the air. Players MUST have a Tears of the Goddess consumable equipped to feather fall. Without it, they die. Every player needs this item crafted before the raid.</div>
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <table class="ability-table">
+        <tr><th>Ability</th><th>Response</th></tr>
+        <tr><td class="ability-name">Air Burst</td><td class="ability-danger">Launches random player into air — USE TEARS OF THE GODDESS to feather fall. Non-negotiable.</td></tr>
+        <tr><td class="ability-name">Doomfire</td><td class="ability-danger">Doomfire Spirit spawns and creates fire patches — entire raid kites them, never stand still</td></tr>
+        <tr><td class="ability-name">Finger of Death</td><td class="ability-danger">Instant kill on random non-tank player — requires 12k+ health or priest's Pain Suppression</td></tr>
+        <tr><td class="ability-name">Soul Charge</td><td>On player death — Archimonde gains power. Do not die early in the fight</td></tr>
+        <tr><td class="ability-name">Grip of the Legion</td><td>Stacking shadow damage debuff — dispel immediately every single time</td></tr>
+        <tr><td class="ability-name">Fear</td><td>Mass fear — every player needs a PvP trinket or Fear Ward</td></tr>
+      </table>
+    </div>
+    <div class="tactic-block"><div class="tactic-label">Positioning & Strategy</div>
+      <ul>
+        <li>Archimonde is tanked against the World Tree — tank never moves him</li>
+        <li>Entire raid moves constantly to avoid Doomfire — never stand still</li>
+        <li>Assign 2 dedicated "kiting teams" to keep Doomfire Spirits moving in circles away from the raid</li>
+        <li>Healers must keep all players above 12k health at all times for Finger of Death survival</li>
+        <li>Bloodlust during final burn (sub 30%) — assign all cooldowns here</li>
+        <li>Shadow Priests are invaluable here — their replenishment sustains healers</li>
+      </ul>
+    </div>
+  </div></div>
+</div>
+
+<!-- ========== BLACK TEMPLE ========== -->
+<div id="section-bt" class="section">
+  <div class="section-header">
+    <h2>Black Temple</h2>
+    <div class="raid-meta">25-Player <span>·</span> Shadowmoon Valley <span>·</span> Tier 6 <span>·</span> 9 Bosses</div>
+  </div>
+  <div class="tip-box gold"><strong>Tier 6 Raid</strong> Black Temple is the pinnacle of TBC raiding. Illidan Stormrage is the final boss of the expansion. Many fights require specialized compositions and assignments.</div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🪨</div>
+    <div><div class="boss-name">High Warlord Naj'entus</div>
+      <div class="boss-tags"><span class="tag tag-nature">Nature</span><span class="tag tag-physical">Physical</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Tidal Shield: Naj'entus becomes immune with a shield bubble periodically. Must be broken with a Spine of Najentus</li>
+        <li>Impaling Spine: Stabs a random player with a spine — that player cannot move and takes DoT damage</li>
+        <li>The Spine must be removed from the player and thrown at Naj'entus to break the shield</li>
+        <li>Assign 1 player per quadrant to collect Spines from their area and throw them at the shield</li>
+        <li>Needle Spine: Spine thrown at random player — targeted player must move away from the raid</li>
+        <li>Shield break = massive AoE damage on raid — healers pre-cast heals for this moment</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🦂</div>
+    <div><div class="boss-name">Supremus</div>
+      <div class="boss-tags"><span class="tag tag-fire">Fire</span><span class="tag tag-physical">Physical</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Phase 1 (Tank &amp; Spank): Standard tanking — melee behind, ranged spread</li>
+        <li>Volcano: Fire patches randomly appear — entire raid must move constantly to avoid them</li>
+        <li>Phase 2 (Chase Phase): Supremus loses aggro and chases random players — everyone must kite him</li>
+        <li>During chase phase: DO NOT let him catch you, kite in circles around the room</li>
+        <li>Tanks: Stay near Supremus to pick him up when Phase 1 resumes</li>
+        <li>Hateful Strike: In P1 — hits 2nd on threat list hard. OT must be 2nd in threat at all times</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">👁</div>
+    <div><div class="boss-name">Shade of Akama</div>
+      <div class="boss-tags"><span class="tag tag-shadow">Shadow</span><span class="tag tag-physical">Physical</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>The Shade is initially immune — Akama's Soul Fragment (friendly NPC) must drain his essence</li>
+        <li>Ashtongue Broken (friendly adds) must escort Akama's fragment safely to the Shade</li>
+        <li>Channelers spawn in waves and must be killed to stop them from keeping the Shade immune</li>
+        <li>Defenders and Sorcerers spawn constantly — tanks hold the melee ones, healers dispel Sorcerer's hexes</li>
+        <li>Once Akama reaches the Shade: Shade becomes vulnerable — standard tank fight at this point</li>
+        <li>Mostly a DPS race on adds — ensure all channelers are dead quickly</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">⚡</div>
+    <div><div class="boss-name">Teron Gorefiend</div>
+      <div class="boss-tags"><span class="tag tag-shadow">Shadow</span><span class="tag tag-hard">Ghost Mechanic</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Ghost Players</strong> — Construct of Shadows kills a random player and turns them into a ghost. The ghost player must kill 4 Shadow Constructs within 30 seconds or they explode, killing the raid. Practice ghost control before the pull.</div>
+    <div class="tactic-block"><div class="tactic-label">Ghost Phase (Critical)</div>
+      <ul>
+        <li>When you become a ghost: Immediately target a Shadow Construct and spam your ghost abilities</li>
+        <li>You have 4 ghost abilities with short cooldowns — use them ALL to kill 4 constructs fast</li>
+        <li>Ghost players must position constructs away from the raid (they slow nearby players)</li>
+        <li>Living players: Ignore ghosts and keep DPS on Gorefiend</li>
+        <li>Shadow of Death: The debuff that creates ghosts. Note the name so you can warn the affected player</li>
+        <li>Incinerate: Massive single-target — designate a tank to absorb it</li>
+        <li>Practice ghost mechanics on test dummies or in a rehearsal before the real attempt</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🌑</div>
+    <div><div class="boss-name">Gurtogg Bloodboil</div>
+      <div class="boss-tags"><span class="tag tag-physical">Physical</span><span class="tag tag-fire">Fel</span><span class="tag tag-tank">3 Tanks</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Fel Acid Breath: Frontal cone that stacks a dot debuff on players — must face Gurtogg away from raid</li>
+        <li>Bloodboil: Randomly applied to 5 players — they take DoT damage and spread Bloodboil to nearby allies. Affected players must SPREAD OUT immediately</li>
+        <li>Arcing Smash: Cleave attack — only tank in front of Gurtogg</li>
+        <li>Bubbling Blood: Tank debuff — tank swap at 3 stacks (3 tanks recommended)</li>
+        <li>Phase 2: Gurtogg goes berserk mode after extended time — burn before this</li>
+        <li>Assign healers specifically to Bloodboil targets for spot healing</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">💜</div>
+    <div><div class="boss-name">Reliquary of Souls</div>
+      <div class="boss-tags"><span class="tag tag-shadow">Shadow</span><span class="tag tag-hard">3 Phases</span><span class="tag tag-hard">No Healing P1</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Phase 1 — No Healing</strong> Essence of Suffering: Any healing spell cast during this phase causes massive raid-wide damage. Healers must NOT HEAL during Phase 1.</div>
+    <div class="tactic-block"><div class="tactic-label">Phase Breakdown</div>
+      <table class="ability-table">
+        <tr><th>Phase</th><th>Key Rule</th><th>Mechanic</th></tr>
+        <tr><td class="ability-name">P1: Essence of Suffering</td><td class="ability-danger">NO HEALING — ever</td><td>Frenzy stacks on boss. Tank swap every 3 stacks. DPS burn hard.</td></tr>
+        <tr><td class="ability-name">P2: Essence of Desires</td><td>Siphon Soul — interrupt!</td><td class="ability-danger">Interrupts the healer Siphon Soul cast or a healer gets instantly killed. Assign 3 interrupters.</td></tr>
+        <tr><td class="ability-name">P3: Essence of Anger</td><td>Taunt causes wipe</td><td class="ability-danger">Boss taunts = threat inversion. Do NOT taunt. Let the tank cycle aggro naturally. Burst DPS only.</td></tr>
+      </table>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">🗡</div>
+    <div><div class="boss-name">Mother Shahraz</div>
+      <div class="boss-tags"><span class="tag tag-shadow">Shadow</span><span class="tag tag-physical">Physical</span><span class="tag tag-hard">Shadow Resist Gear</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Resist Gear Required</strong> — All 25 players need at least 365 Shadow Resist (cap). This requires farming Shadow Resist crafted gear from Black Temple drops and Primal Shadows. Do not attempt without it.</div>
+    <div class="tactic-block"><div class="tactic-label">Mechanics</div>
+      <ul>
+        <li>Fatal Attraction: 3 players are linked together — if they are too far apart or too close, they take damage. Maintain medium range between the trio</li>
+        <li>Saber Lash: Cleave that hits the 2 highest threat targets — both tanks must be on Shahraz at all times</li>
+        <li>Enrage: At low HP she enrages — burn her hard in the final 20%</li>
+        <li>Silencing Shriek: AoE silence — healers must pre-cast hots and shields before it lands</li>
+        <li>With proper shadow resist gear, most of her damage becomes manageable</li>
+      </ul>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">⚔</div>
+    <div><div class="boss-name">Illidari Council</div>
+      <div class="boss-tags"><span class="tag tag-physical">Physical</span><span class="tag tag-magic">Magic</span><span class="tag tag-tank">4 Tanks</span><span class="tag tag-hard">Shared Health</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>Shared Health Pool</strong> — All 4 council members share one health pool. Killing one kills them all. Focus single-target DPS on one while managing all adds.</div>
+    <div class="tactic-block"><div class="tactic-label">Council Members</div>
+      <table class="ability-table">
+        <tr><th>Member</th><th>Tank Notes</th><th>Key Mechanic</th></tr>
+        <tr><td class="ability-name">High Nethermancer Zerevor</td><td>Ranged tank or kite</td><td>Blizzard &amp; Flamestrike — move out of patches</td></tr>
+        <tr><td class="ability-name">Lady Malande</td><td>Tank at range</td><td class="ability-danger">Interrupt Circle of Healing every cast — she heals all members</td></tr>
+        <tr><td class="ability-name">Gathios the Shatterer</td><td>Melee tank</td><td>Seal of Command — judge pally tank frequently</td></tr>
+        <tr><td class="ability-name">Veras Darkshadow</td><td>Rogue, no tank needed</td><td class="ability-danger">Deadly Poison + Envenom — assigned healer must dispel poison FAST</td></tr>
+      </table>
+    </div>
+  </div></div>
+
+  <div class="boss-card"><div class="boss-header" onclick="toggleBoss(this.parentElement)">
+    <div class="boss-icon">😈</div>
+    <div><div class="boss-name">Illidan Stormrage</div>
+      <div class="boss-tags"><span class="tag tag-fire">Fire</span><span class="tag tag-shadow">Shadow</span><span class="tag tag-physical">Physical</span><span class="tag tag-hard">5-Phase Legendary</span></div></div>
+    <div class="boss-chevron">▾</div>
+  </div>
+  <div class="boss-body">
+    <div class="tip-box warning"><strong>You Are Not Prepared.</strong> The most iconic boss of TBC. Each phase requires different setups. Maiev arrives during Phase 5. Assign all 5 phase roles before the pull.</div>
+    <div class="tactic-block"><div class="tactic-label">Phase Breakdown</div>
+      <table class="ability-table">
+        <tr><th>Phase</th><th>Summary</th><th>Critical Actions</th></tr>
+        <tr><td class="ability-name">P1: Standard (100–65%)</td><td>Tank fight with Shear &amp; Draw Soul</td><td>2 tanks swap. Healers dispel Draw Soul targets instantly.</td></tr>
+        <tr><td class="ability-name">P2: Demon Form (65%)</td><td>Illidan transforms — Eye Beams &amp; Fireballs</td><td class="ability-danger">Eye Beam target RUNS — others freeze. Parasitic Shadowfiend cleansed.</td></tr>
+        <tr><td class="ability-name">P3: Akama (60%)</td><td>Akama appears and forces P3</td><td>DPS Illidan to 30%. Handle adds around the room.</td></tr>
+        <tr><td class="ability-name">P4: Demon Form Again (30%)</td><td>Second Demon Form</td><td class="ability-danger">Same as P2 — repeat Eye Beam kiting. Bloodlust here.</td></tr>
+        <tr><td class="ability-name">P5: Enrage (till death)</td><td>Maiev traps Illidan. Full burn.</td><td class="ability-danger">Shear every 8s = tank swap. Flame Crash = tank repositions. ALL cooldowns.</td></tr>
+      </table>
+    </div>
+    <div class="tactic-block"><div class="tactic-label">Eye Beam (Phase 2 &amp; 4)</div>
+      <ul>
+        <li>Illidan locks onto a random player and shoots a beam — that player must RUN in a straight line away</li>
+        <li>ALL other players must FREEZE in place — moving into the beam's path causes instant death</li>
+        <li>Eye Beam player: Run toward a wall, do not run through the raid</li>
+        <li>Healers: Keep the Beam target alive while they run. Others: stop all movement immediately</li>
+      </ul>
+    </div>
+    <div class="tactic-block"><div class="tactic-label">Parasitic Shadowfiend</div>
+      <ul>
+        <li>Random player gets a shadow demon parasite — if not dispelled within 10 sec, it bursts and spawns Shadowfiends</li>
+        <li>Assign 2 priests to immediately dispel Parasitic Shadowfiend every time it appears</li>
+        <li>Shadowfiends that spawn must be AoE killed immediately — they MC players</li>
+      </ul>
+    </div>
+    <div class="role-blocks" style="margin-top:16px;">
+      <div class="role-block tank"><div class="role-block-title">⚔ Tanks</div><ul>
+        <li>MT + OT: Shear swap at 2 stacks</li>
+        <li>Flame Crash reposition</li>
+        <li>P5: Tank near center</li>
+      </ul></div>
+      <div class="role-block healer"><div class="role-block-title">💚 Healers</div><ul>
+        <li>2 dispellers on Shadowfiend</li>
+        <li>1 dedicated Eye Beam healer</li>
+        <li>Sustain through P4 burn</li>
+      </ul></div>
+      <div class="role-block dps"><div class="role-block-title">⚡ DPS</div><ul>
+        <li>FREEZE during Eye Beam</li>
+        <li>Kill Shadowfiend adds ASAP</li>
+        <li>Bloodlust P4 or P5</li>
+      </ul></div>
+    </div>
+  </div></div>
+</div>
+
+</main>
+
+<script>
+// === SECTION NAVIGATION ===
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// === BOSS ACCORDION ===
+function toggleBoss(el) {
+  const card = (typeof el === 'string') ? document.getElementById('boss-' + el) : el;
+  card.classList.toggle('open');
+}
+
+// === ROSTER BUILDER ===
+const CLASSES = ['Warrior','Paladin','Hunter','Rogue','Priest','Shaman','Mage','Warlock','Druid'];
+const ROLES = ['Tank','Healer','DPS'];
+const CLASS_ROLES = {
+  Warrior: ['Tank','DPS'], Paladin: ['Tank','Healer','DPS'], Hunter: ['DPS'],
+  Rogue: ['DPS'], Priest: ['Healer','DPS'], Shaman: ['Healer','DPS'],
+  Mage: ['DPS'], Warlock: ['DPS'], Druid: ['Tank','Healer','DPS']
+};
+
+let roster = JSON.parse(localStorage.getItem('tbc_roster') || '[]');
+if (!roster.length) roster = Array.from({length:25},(_,i)=>({name:'',cls:'',role:''}));
+
+function saveRoster() { try { localStorage.setItem('tbc_roster', JSON.stringify(roster)); } catch(e){} }
+
+function buildPlayerGrid() {
+  const grid = document.getElementById('player-grid');
+  grid.innerHTML = '';
+  roster.forEach((p,i) => {
+    const slot = document.createElement('div');
+    slot.className = 'player-slot';
+    slot.dataset.index = i;
+
+    const cls = p.cls || '';
+    const dotClass = cls ? 'dot-' + cls.toLowerCase() : '';
+    const roleColor = p.role === 'Tank' ? '#C79C6E' : p.role === 'Healer' ? '#F58CBA' : p.role === 'DPS' ? '#69CCF0' : '#555';
+
+    slot.innerHTML = `
+      <span class="slot-num">${String(i+1).padStart(2,'0')}</span>
+      <div class="player-dot ${dotClass}" style="${!dotClass?'background:#333':''}"></div>
+      <input type="text" placeholder="Name" value="${p.name}" onchange="updatePlayer(${i},'name',this.value)" style="width:75px;flex:1;">
+      <select onchange="updatePlayer(${i},'cls',this.value)">
+        <option value="">Class</option>
+        ${CLASSES.map(c=>`<option value="${c}" ${p.cls===c?'selected':''}>${c}</option>`).join('')}
+      </select>
+      <select onchange="updatePlayer(${i},'role',this.value)" style="width:70px;">
+        <option value="">Role</option>
+        ${ROLES.map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${r}</option>`).join('')}
+      </select>
+    `;
+    grid.appendChild(slot);
+  });
+  updateSummary();
+}
+
+function updatePlayer(i, field, val) {
+  roster[i][field] = val;
+  if (field === 'cls') {
+    const dot = document.querySelectorAll('.player-slot')[i].querySelector('.player-dot');
+    dot.className = 'player-dot dot-' + val.toLowerCase();
+    if (!val) { dot.className = 'player-dot'; dot.style.background='#333'; }
+    else dot.style.background='';
+  }
+  saveRoster();
+  updateSummary();
+}
+
+function updateSummary() {
+  const counts = {Tank:0,Healer:0,DPS:0,total:0};
+  const classCounts = {};
+  roster.forEach(p => {
+    if (p.name) {
+      counts.total++;
+      if (p.role) counts[p.role] = (counts[p.role]||0)+1;
+      if (p.cls) classCounts[p.cls] = (classCounts[p.cls]||0)+1;
+    }
+  });
+  const summary = document.getElementById('comp-summary');
+  summary.innerHTML = `
+    <div class="comp-stat"><div class="stat-val">${counts.total}</div><div class="stat-label">Players</div></div>
+    <div class="comp-stat"><div class="stat-val" style="color:var(--warrior)">${counts.Tank||0}</div><div class="stat-label">Tanks</div></div>
+    <div class="comp-stat"><div class="stat-val" style="color:var(--paladin)">${counts.Healer||0}</div><div class="stat-label">Healers</div></div>
+    <div class="comp-stat"><div class="stat-val" style="color:var(--blue2)">${counts.DPS||0}</div><div class="stat-label">DPS</div></div>
+    ${Object.entries(classCounts).map(([c,n])=>`<div class="comp-stat"><div class="stat-val class-${c.toLowerCase()}" style="font-size:16px;">${n}</div><div class="stat-label" style="font-size:9px;">${c}</div></div>`).join('')}
+  `;
+}
+
+function filterRole(btn, role) {
+  document.querySelectorAll('.role-filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.player-slot').forEach(slot => {
+    const i = parseInt(slot.dataset.index);
+    const p = roster[i];
+    if (role === 'all' || !p.role || p.role === role) {
+      slot.style.display = 'flex';
+    } else {
+      slot.style.display = 'none';
+    }
+  });
+}
+
+function clearRoster() {
+  if (!confirm('Clear all roster data?')) return;
+  roster = Array.from({length:25},()=>({name:'',cls:'',role:''}));
+  saveRoster();
+  buildPlayerGrid();
+}
+
+function exportRoster() {
+  const lines = roster.filter(p=>p.name).map((p,_)=>`${p.name} — ${p.cls||'?'} (${p.role||'?'})`);
+  const text = '=== RAID ROSTER ===\n' + lines.join('\n');
+  navigator.clipboard.writeText(text).then(()=>alert('Roster copied to clipboard!')).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta); alert('Roster copied!');
+  });
+}
+
+// === ASSIGNMENTS ===
+function buildAssignments() {
+  const list = document.getElementById('assignment-list');
+  list.innerHTML = '';
+  const players = roster.filter(p=>p.name);
+  if (!players.length) { list.innerHTML='<p style="color:var(--text-muted);font-style:italic;">No players in roster. Add players in the Roster tab first.</p>'; return; }
+  players.forEach((p,i) => {
+    const row = document.createElement('div');
+    row.className = 'assignment-row';
+    const dotClass = p.cls ? 'dot-' + p.cls.toLowerCase() : '';
+    row.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="player-dot ${dotClass}" style="${!dotClass?'background:#444':''}"></div>
+        <span style="font-family:'Cinzel',serif;font-size:13px;color:var(--text-bright);">${p.name}</span>
+        <span class="tag" style="font-size:9px;background:rgba(255,255,255,0.04);color:var(--text-muted);border:1px solid var(--border);">${p.cls||'?'}</span>
+      </div>
+      <div>
+        <select style="background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'Crimson Pro',serif;font-size:13px;padding:3px 6px;border-radius:2px;outline:none;width:100%;">
+          <option>Main Assist</option><option>Tank</option><option>Off-Tank</option><option>Healer</option>
+          <option>Ranged DPS</option><option>Melee DPS</option><option>Interrupter</option>
+          <option>Cube Clicker</option><option>Kiter</option><option>Add Control</option>
+          <option>Bloodlust</option><option>Dispeler</option><option>Core Runner</option>
+        </select>
+      </div>
+      <input type="text" placeholder="Specific instructions..." style="background:var(--bg3);border:1px solid var(--border);border-radius:2px;color:var(--text);font-family:'Crimson Pro',serif;font-size:13px;padding:4px 8px;outline:none;width:100%;">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--text-muted);text-align:center;">${p.role||''}</div>
+    `;
+    list.appendChild(row);
+  });
+}
+
+// === INIT ===
+buildPlayerGrid();
+</script>
+</body>
+</html>
